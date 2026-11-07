@@ -1,7 +1,7 @@
 import { ChevronRight, FolderOpen, Wallet } from "lucide-react";
 import { useState } from "react";
 import { FORMATS } from "../data/config";
-import { balanceOf, editors, editorStats, isOverdue, useStore } from "../data/store";
+import { dueOf, editors, editorStats, isOverdue, useStore } from "../data/store";
 import type { VideoFormat } from "../data/types";
 import { formatRub, isThisMonth, plural } from "../lib/format";
 import { useNav } from "../lib/nav";
@@ -15,8 +15,9 @@ export function Team() {
   const [priceFormat, setPriceFormat] = useState<VideoFormat | null>(null);
 
   const team = editors(state);
-  const acceptedThisMonth = state.tasks.filter((t) => t.acceptedAt && isThisMonth(t.acceptedAt));
-  const totalDue = team.reduce((s, u) => s + balanceOf(state, u.id).due, 0);
+  const publishedThisMonth = state.tasks.filter((t) => t.publishedAt && isThisMonth(t.publishedAt));
+  const published = state.tasks.filter((t) => t.column === "published").length;
+  const totalDue = team.reduce((s, u) => s + dueOf(state, u.id).due, 0);
   const overdue = state.tasks.filter((t) => isOverdue(t)).length;
 
   return (
@@ -26,8 +27,8 @@ export function Team() {
           <p className="text-[13px] opacity-60">К выплате всей команде</p>
           <p className="heading mt-1 text-[36px] tabular-nums">{formatRub(totalDue)}</p>
           <div className="mt-4 grid grid-cols-3 gap-3 border-t border-[color-mix(in_srgb,var(--app-card)_15%,transparent)] pt-4 text-[13px]">
-            <Stat value={acceptedThisMonth.length} label={`${plural(acceptedThisMonth.length, ["ролик", "ролика", "роликов"])} принято за месяц`} />
-            <Stat value={formatRub(acceptedThisMonth.reduce((s, t) => s + t.price, 0))} label="начислено за месяц" />
+            <Stat value={published} label={`${plural(published, ["ролик", "ролика", "роликов"])} к выплате`} />
+            <Stat value={publishedThisMonth.length} label="опубликовано за месяц" />
             <Stat value={overdue} label="просрочено" danger={overdue > 0} />
           </div>
         </div>
@@ -35,7 +36,7 @@ export function Team() {
         <GroupTitle>Монтажёры</GroupTitle>
         <Card className="divide-y divide-line">
           {team.map((u) => {
-            const b = balanceOf(state, u.id);
+            const b = dueOf(state, u.id);
             const st = editorStats(state, u.id);
             return (
               <button key={u.id} type="button" onClick={() => nav.push({ name: "member", id: u.id })} className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-soft">
@@ -43,7 +44,7 @@ export function Team() {
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-medium">{u.name}</span>
                   <span className="block text-[12px] text-hint">
-                    в работе {st.active} · сдано за месяц {st.acceptedThisMonth}
+                    в работе {st.active} · опубликовано за месяц {st.acceptedThisMonth}
                   </span>
                 </span>
                 <span className="text-right">

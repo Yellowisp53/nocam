@@ -4,7 +4,7 @@
  * Каждое действие пишет запись в историю задачи. Права — в одном месте: canMove().
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
-import { ACCEPTED_COLUMNS, ADMIN_ONLY_COLUMNS, EDITOR_FLOW, columnById } from "./config";
+import { ADMIN_ONLY_COLUMNS, EDITOR_COLUMNS, LOCKED_COLUMNS, PAYABLE_COLUMN, columnById } from "./config";
 import { createDemoState } from "./demo";
 import type {
   Brief,
@@ -12,7 +12,6 @@ import type {
   ClientFeedback,
   ColumnId,
   HistoryEntry,
-  Payout,
   Source,
   State,
   Task,
@@ -33,17 +32,18 @@ export function canMove(user: User, task: Task, to: ColumnId): Result {
   if (task.column === to) return fail("Карточка уже в этом столбце");
   if (user.role === "admin") return ok;
   if (task.assigneeId !== user.id) return fail("Это не ваша задача");
+  if (LOCKED_COLUMNS.includes(task.column)) return fail("Ролик уже одобрен — двигает только админ");
   if (ADMIN_ONLY_COLUMNS.includes(to)) return fail(`Перевести в «${columnById(to).title}» может только админ`);
-  if (!EDITOR_FLOW[task.column].includes(to)) return fail("Так переместить нельзя");
+  if (!EDITOR_COLUMNS.includes(to)) return fail("Так переместить нельзя");
   return ok;
 }
 
-/** Перевод в «Готово к проверке» — только с новой версией ролика */
-export const needsVersion = (to: ColumnId) => to === "review";
+/** Монтажёр отправляет на проверку только вместе со своим видео (новой версией) */
+export const needsVersion = (user: User, to: ColumnId) => to === "review" && user.role !== "admin";
 /** Перевод в «На правках» — только с комментарием, что исправить */
 export const needsComment = (to: ColumnId) => to === "revisions";
 
-export const canEditPrice = (user: User, task: Task) => user.role === "admin" && !task.acceptedAt;
+export const canEditPrice = (user: User, task: Task) => user.role === "admin" && !task.publishedAt;
 export const canSeePrice = (user: User, task: Task) => user.role === "admin" || task.assigneeId === user.id;
 
 // ───────────────────────── редьюсер
@@ -53,7 +53,7 @@ type Action =
   | { type: "switchUser"; userId: string }
   | { type: "task"; taskId: string; update: (t: Task) => Task }
   | { type: "createTask"; task: Task }
-  | { type: "addPayout"; payout: Payout }
+  | { type: "removeTasks"; ids: string[] }
   | { type: "upsertCategory"; category: Category }
   | { type: "deleteCategory"; categoryId: string }
   | { type: "setDefaultPrice"; format: VideoFormat; price: number };
@@ -68,8 +68,8 @@ function reducer(state: State, a: Action): State {
       return { ...state, tasks: state.tasks.map((t) => (t.id === a.taskId ? a.update(t) : t)) };
     case "createTask":
       return { ...state, tasks: [a.task, ...state.tasks] };
-    case "addPayout":
-      return { ...state, payouts: [a.payout, ...state.payouts] };
+    case "removeTasks":
+      return { ...state, tasks: state.tasks.filter((t) => !a.ids.includes(t.id)) };
     case "upsertCategory": {
       const exists = state.categories.some((c) => c.id === a.category.id);
       return {
@@ -94,15 +94,12 @@ const log = (byId: string, text: string, extra?: Partial<HistoryEntry>): History
   ...extra,
 });
 
-/** Перемещение + даты принятия/публикации (оплата начисляется по acceptedAt) */
+/** Перемещение + дата публикации (с неё оплата стоит «к выплате») */
 function applyMove(task: Task, to: ColumnId, byId: string, text = "переместил"): Task {
-  const now = Date.now();
-  const accepted = ACCEPTED_COLUMNS.includes(to);
   return {
     ...task,
     column: to,
-    acceptedAt: accepted ? (task.acceptedAt ?? now) : undefined,
-    publishedAt: to === "published" ? (task.publishedAt ?? now) : undefined,
+    publishedAt: to === PAYABLE_COLUMN ? (task.publishedAt ?? Date.now()) : undefined,
     history: [...task.history, log(byId, text, { from: task.column, to })],
   };
 }
@@ -114,7 +111,7 @@ function load(): State {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const s = JSON.parse(raw) as State;
-      if (s.version === 1 && Array.isArray(s.tasks)) return s;
+      if (s.version === 2 && Array.isArray(s.tasks)) return s;
     }
   } catch {
     /* битые данные — начинаем с демо */
@@ -194,7 +191,7 @@ function useStoreValue() {
         return withTask(taskId, (t) => {
           const allowed = canMove(me, t, to);
           if (!allowed.ok) return allowed;
-          if (needsVersion(to)) return fail("Чтобы сдать на проверку, прикрепите новую версию ролика");
+          if (needsVersion(me, to)) return fail("Чтобы отправить на проверку, загрузите своё видео");
           if (needsComment(to) && !note?.trim()) return fail("Напишите, что исправить");
           let next = applyMove(t, to, me.id);
           if (note?.trim()) next = { ...next, comments: [...next.comments, { id: uid("m"), byId: me.id, text: note.trim(), at: Date.now() }] };
@@ -202,9 +199,10 @@ function useStoreValue() {
         });
       },
 
-      /** Сдать ролик: новая версия + перевод в «Готово к проверке» */
+      /** На проверку: своё видео (новая версия) + перевод в «Готово к проверке» */
       addVersion(taskId: string, v: { url: string; name?: string; note?: string; poster?: string }): Result {
         return withTask(taskId, (t) => {
+          if (me.role !== "admin" && t.assigneeId !== me.id) return fail("Это не ваша задача");
           if (t.column !== "review") {
             const allowed = canMove(me, t, "review");
             if (!allowed.ok) return allowed;
@@ -266,11 +264,15 @@ function useStoreValue() {
         }));
       },
 
-      addPayout(userId: string, amount: number, note: string): Result {
-        if (me.role !== "admin") return fail("Выплаты отмечает только админ");
-        if (!Number.isFinite(amount) || amount <= 0) return fail("Введите сумму");
-        dispatch({ type: "addPayout", payout: { id: uid("p"), userId, amount: Math.round(amount), at: Date.now(), note: note.trim() } });
-        return ok;
+      /** Убрать опубликованные ролики (всех или одного монтажёра) — вместе с ними уходит и «к выплате» */
+      clearPublished(userId?: string): Result & { count?: number } {
+        if (me.role !== "admin") return fail("Очищает только админ");
+        const ids = state.tasks
+          .filter((t) => t.column === PAYABLE_COLUMN && (!userId || t.assigneeId === userId))
+          .map((t) => t.id);
+        if (!ids.length) return fail("Опубликованных роликов нет");
+        dispatch({ type: "removeTasks", ids });
+        return { ok: true, count: ids.length };
       },
 
       saveCategory(c: { id?: string; name: string; description: string }): Result & { id?: string } {
@@ -323,23 +325,22 @@ export const editors = (s: State) => s.users.filter((u) => u.role === "editor");
 export const visibleTasks = (s: State, me: User) =>
   me.role === "admin" ? s.tasks : s.tasks.filter((t) => t.assigneeId === me.id);
 
-export const isOverdue = (t: Task, now = Date.now()) => t.deadline < now && !ACCEPTED_COLUMNS.includes(t.column);
+export const isOverdue = (t: Task, now = Date.now()) => t.deadline < now && !LOCKED_COLUMNS.includes(t.column);
 
-/** Баланс вычисляется: начислено (цены принятых роликов) − выплачено */
-export function balanceOf(s: State, userId: string) {
-  const accepted = s.tasks.filter((t) => t.assigneeId === userId && t.acceptedAt);
-  const accrued = accepted.reduce((sum, t) => sum + t.price, 0);
-  const payouts = s.payouts.filter((p) => p.userId === userId).sort((a, b) => b.at - a.at);
-  const paid = payouts.reduce((sum, p) => sum + p.amount, 0);
-  return { accrued, paid, due: accrued - paid, accepted: accepted.sort((a, b) => b.acceptedAt! - a.acceptedAt!), payouts };
+/** «К выплате» — сумма цен опубликованных роликов монтажёра. Никаких переводов: очистили опубликованные — сумма ушла */
+export function dueOf(s: State, userId: string) {
+  const tasks = s.tasks
+    .filter((t) => t.assigneeId === userId && t.column === PAYABLE_COLUMN)
+    .sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
+  return { due: tasks.reduce((sum, t) => sum + t.price, 0), tasks };
 }
 
 export function editorStats(s: State, userId: string) {
   const mine = s.tasks.filter((t) => t.assigneeId === userId);
-  const acceptedThisMonth = mine.filter((t) => t.acceptedAt && isThisMonth(t.acceptedAt));
-  const done = mine.filter((t) => t.acceptedAt);
+  const acceptedThisMonth = mine.filter((t) => t.publishedAt && isThisMonth(t.publishedAt));
+  const done = mine.filter((t) => t.publishedAt);
   const avgDays = done.length
-    ? done.reduce((sum, t) => sum + (t.acceptedAt! - t.createdAt), 0) / done.length / 86_400_000
+    ? done.reduce((sum, t) => sum + (t.publishedAt! - t.createdAt), 0) / done.length / 86_400_000
     : 0;
   const rounds = mine.reduce((sum, t) => sum + t.history.filter((h) => h.to === "revisions").length, 0);
   const active = mine.filter((t) => ["todo", "doing", "review", "revisions"].includes(t.column)).length;

@@ -97,7 +97,8 @@ function TaskDetailInner({ task }: { task: Task }) {
     if (flow.isOpen || revisionAt !== null || priceOpen) return null;
     if (!isAdmin && isMine) {
       if (task.column === "todo") return { text: "Взять в работу", onClick: () => flow.requestMove(task, "doing") };
-      if (task.column === "doing") return { text: "Сдать ролик", onClick: () => flow.open("submit", task.id) };
+      if (task.column === "doing") return { text: "Отправить на проверку", onClick: () => flow.open("submit", task.id) };
+      if (task.column === "review") return { text: "Забрать на доработку", onClick: () => flow.requestMove(task, "doing") };
       if (task.column === "revisions") return { text: "Сдать исправленный", onClick: () => flow.open("submit", task.id) };
     }
     if (isAdmin) {
@@ -164,7 +165,7 @@ function TaskDetailInner({ task }: { task: Task }) {
               >
                 {formatRub(task.price)}
                 {canEditPrice(me, task) && <Pencil className="h-3.5 w-3.5 text-hint" strokeWidth={1.75} />}
-                {task.acceptedAt && <span className="text-[12px] font-medium text-success">начислено</span>}
+                {task.publishedAt && <span className="text-[12px] font-medium text-success">к выплате</span>}
               </button>
             </InfoRow>
           )}
@@ -227,7 +228,7 @@ function TaskDetailInner({ task }: { task: Task }) {
             </Btn>
           </div>
         )}
-        {!isAdmin && !main && (
+        {!isAdmin && isMine && !finished && (
           <Btn variant="secondary" className="mt-3 w-full" onClick={() => flow.open("move", task.id)}>
             <ArrowRightLeft className="h-4 w-4" strokeWidth={1.75} />
             Переместить в…

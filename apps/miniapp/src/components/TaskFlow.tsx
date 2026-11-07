@@ -1,14 +1,14 @@
 /**
- * Перемещение карточек и связанные шторки: «Переместить в…», «Сдать ролик», «Вернуть на правки».
+ * Перемещение карточек и связанные шторки: «Переместить в…», «На проверку» (с загрузкой видео), «Вернуть на правки».
  * Используется и доской (перетаскивание), и карточкой задачи — правила одни (canMove в store).
  */
-import { Link2, Lock, Upload } from "lucide-react";
+import { Lock, Upload } from "lucide-react";
 import { useCallback, useState } from "react";
 import { COLUMNS, columnById } from "../data/config";
 import { canMove, needsComment, needsVersion, useStore, userById } from "../data/store";
 import type { ColumnId, Task } from "../data/types";
 import { formatRub } from "../lib/format";
-import { fileToVideo, isUrl } from "../lib/media";
+import { fileToVideo } from "../lib/media";
 import { haptic } from "../lib/telegram";
 import { useToast } from "./Toast";
 import { Btn, Field, Sheet } from "./ui";
@@ -24,10 +24,15 @@ export function useTaskFlow() {
     (task: Task, to: ColumnId) => {
       const who = userById(state, task.assigneeId)?.name ?? "Монтажёр";
       const messages: Partial<Record<ColumnId, string>> = {
-        doing: me.role === "admin" ? `Перемещено в «В работе»` : "Задача в работе — удачи с монтажом",
-        todo: "Перемещено в «Задачи»",
-        ready: `Ролик принят · ${who}у начислено ${formatRub(task.price)}`,
-        published: "Отмечено как опубликованное",
+        doing:
+          me.role === "admin"
+            ? "Перемещено в «В работе»"
+            : task.column === "review"
+              ? "Забрали с проверки — доработайте и отправьте снова"
+              : "Задача в работе — удачи с монтажом",
+        todo: me.role === "admin" ? "Перемещено в «Задачи»" : "Вернули в задачи",
+        ready: "Ролик принят · после публикации оплата встанет к выплате",
+        published: `Опубликовано · ${who}у к выплате ${formatRub(task.price)}`,
       };
       toast(messages[to] ?? `Перемещено в «${columnById(to).title}»`);
     },
@@ -41,7 +46,7 @@ export function useTaskFlow() {
         toast(allowed.error, "error");
         return false;
       }
-      if (needsVersion(to)) {
+      if (needsVersion(me, to)) {
         setSheet({ kind: "submit", taskId: task.id });
         return false;
       }
@@ -123,96 +128,70 @@ function MoveSheet({ task, onClose, onPick }: { task: Task; onClose: () => void;
 function SubmitSheet({ task, onClose }: { task: Task; onClose: () => void }) {
   const { actions } = useStore();
   const toast = useToast();
-  const [mode, setMode] = useState<"file" | "link">("file");
   const [file, setFile] = useState<{ url: string; poster?: string; name: string } | null>(null);
-  const [link, setLink] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const n = task.versions.length + 1;
   const unresolved = task.revisions.filter((r) => !r.resolved).length;
 
-  const canSubmit = mode === "file" ? Boolean(file) : isUrl(link);
-
   const submit = () => {
-    const payload =
-      mode === "file" && file
-        ? { url: file.url, poster: file.poster, name: file.name, note }
-        : { url: link.trim(), name: "Ссылка на ролик", note };
-    const res = actions.addVersion(task.id, payload);
+    if (!file) return;
+    const res = actions.addVersion(task.id, { url: file.url, poster: file.poster, name: file.name, note });
     if (!res.ok) return toast(res.error, "error");
+    haptic.impact("medium");
     onClose();
-    toast(`Версия v${n} сдана · админ получит уведомление`);
+    toast(`Версия v${n} на проверке · админ получит уведомление`);
   };
 
   return (
     <Sheet
       open
       onClose={onClose}
-      title={`Сдать ролик · v${n}`}
+      title={`На проверку · v${n}`}
       footer={
-        <Btn size="lg" className="w-full" disabled={!canSubmit || busy} onClick={submit}>
-          Сдать на проверку
+        <Btn size="lg" className="w-full" disabled={!file || busy} onClick={submit}>
+          Отправить на проверку
         </Btn>
       }
     >
+      <p className="mb-3 text-[14px] text-hint">Загрузите готовый ролик — админ посмотрит его прямо в карточке.</p>
       {unresolved > 0 && (
         <p className="mb-3 rounded-[12px] bg-[color-mix(in_srgb,var(--app-danger)_10%,transparent)] px-3 py-2.5 text-[13px] text-danger">
-          Не отмечено исправленными: {unresolved}. Проверьте список правок перед сдачей.
+          Не отмечено исправленными: {unresolved}. Проверьте список правок перед отправкой.
         </p>
       )}
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        {(["file", "link"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setMode(m)}
-            className={`flex h-11 items-center justify-center gap-2 rounded-[12px] text-[14px] font-medium ${
-              mode === m ? "bg-ink text-card" : "bg-card"
-            }`}
-          >
-            {m === "file" ? <Upload className="h-4 w-4" strokeWidth={1.75} /> : <Link2 className="h-4 w-4" strokeWidth={1.75} />}
-            {m === "file" ? "Файл" : "Ссылка"}
-          </button>
-        ))}
-      </div>
 
-      {mode === "file" ? (
-        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-line bg-card px-4 py-6 text-center">
-          {file ? (
-            <>
-              {file.poster ? (
-                <img src={file.poster} alt="" className="h-28 rounded-[10px] object-cover" />
-              ) : (
-                <video src={file.url} className="h-28 rounded-[10px]" muted />
-              )}
-              <span className="max-w-full truncate text-[14px] font-medium">{file.name}</span>
-              <span className="text-[12px] text-hint">Нажмите, чтобы выбрать другой</span>
-            </>
-          ) : (
-            <>
-              <Upload className="h-6 w-6 text-hint" strokeWidth={1.5} />
-              <span className="text-[14px] font-medium">{busy ? "Готовим превью…" : "Выбрать видео"}</span>
-              <span className="text-[12px] text-hint">MP4 / MOV · в демо файл живёт до перезагрузки</span>
-            </>
-          )}
-          <input
-            type="file"
-            accept="video/*"
-            className="sr-only"
-            onChange={async (e) => {
-              const f = e.target.files?.[0];
-              if (!f) return;
-              setBusy(true);
-              setFile(await fileToVideo(f));
-              setBusy(false);
-            }}
-          />
-        </label>
-      ) : (
-        <Field label="Ссылка на ролик" hint="Google Drive, Яндекс Диск и т. п.">
-          <input className="field" inputMode="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} />
-        </Field>
-      )}
+      <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-line bg-card px-4 py-6 text-center">
+        {file ? (
+          <>
+            {file.poster ? (
+              <img src={file.poster} alt="" className="h-28 rounded-[10px] object-cover" />
+            ) : (
+              <video src={file.url} className="h-28 rounded-[10px]" muted />
+            )}
+            <span className="max-w-full truncate text-[14px] font-medium">{file.name}</span>
+            <span className="text-[12px] text-hint">Нажмите, чтобы выбрать другой</span>
+          </>
+        ) : (
+          <>
+            <Upload className="h-6 w-6 text-hint" strokeWidth={1.5} />
+            <span className="text-[14px] font-medium">{busy ? "Готовим превью…" : "Загрузить видео"}</span>
+            <span className="text-[12px] text-hint">MP4 / MOV · в демо файл живёт до перезагрузки</span>
+          </>
+        )}
+        <input
+          type="file"
+          accept="video/*"
+          className="sr-only"
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            if (!f) return;
+            setBusy(true);
+            setFile(await fileToVideo(f));
+            setBusy(false);
+          }}
+        />
+      </label>
 
       <div className="mt-4">
         <Field label="Комментарий (необязательно)">

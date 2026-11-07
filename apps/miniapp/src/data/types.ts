@@ -95,25 +95,16 @@ export type Task = {
   revisions: Revision[];
   comments: Comment[];
   history: HistoryEntry[];
-  acceptedAt?: number;
+  /** с этого момента оплата стоит «к выплате» */
   publishedAt?: number;
   clientFeedback?: ClientFeedback;
 };
 
-export type Payout = {
-  id: string;
-  userId: string;
-  amount: number;
-  at: number;
-  note: string;
-};
-
 export type State = {
-  version: 1;
+  version: 2;
   currentUserId: string;
   users: User[];
   categories: Category[];
   tasks: Task[];
-  payouts: Payout[];
   defaultPrices: Record<VideoFormat, number>;
 };

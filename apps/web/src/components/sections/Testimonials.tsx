@@ -2,7 +2,7 @@
 
 import { Loader2, PenLine, Star } from "lucide-react";
 import { useCallback, useState, type FormEvent } from "react";
-import { reviews as cfg, testimonials } from "@/data/content";
+import { reviews as cfg } from "@/data/content";
 import { openAuth, useAccount } from "@/lib/auth";
 import { addReview, useReviews, validateReview, type ReviewErrors, type ReviewInput } from "@/lib/reviews";
 import { Button } from "@/components/ui/Button";
@@ -10,25 +10,20 @@ import { Field, Modal, inputClass } from "@/components/ui/Modal";
 import { Reveal } from "@/components/ui/Reveal";
 import { Section, SectionHeader } from "@/components/ui/Section";
 
-type Card = { id: string; quote: string; name: string; role: string; rating?: number; mine?: boolean };
-
 export function Testimonials() {
   const account = useAccount();
   const userReviews = useReviews();
   const [formOpen, setFormOpen] = useState(false);
   const closeForm = useCallback(() => setFormOpen(false), []);
 
-  const cards: Card[] = [
-    ...userReviews.map((r) => ({
-      id: r.id,
-      quote: r.text,
-      name: r.name,
-      role: r.role,
-      rating: r.rating,
-      mine: r.accountId === account?.id,
-    })),
-    ...testimonials.map((t) => ({ id: t.name, ...t })),
-  ];
+  const cards = userReviews.map((r) => ({
+    id: r.id,
+    quote: r.text,
+    name: r.name,
+    role: r.role,
+    rating: r.rating,
+    mine: r.accountId === account?.id,
+  }));
 
   const write = () => {
     if (account) setFormOpen(true);
@@ -49,16 +44,20 @@ export function Testimonials() {
         </Reveal>
       </div>
 
-      <div className="mt-12 grid gap-4 md:mt-16 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+      {cards.length === 0 && (
+        <Reveal>
+          <p className="mt-12 rounded-[20px] bg-surface px-6 py-10 text-center text-[17px] text-muted md:mt-16">{cfg.empty}</p>
+        </Reveal>
+      )}
+
+      <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5 ${cards.length ? "mt-12 md:mt-16" : ""}`}>
         {cards.map((t, i) => (
           <Reveal key={t.id} delay={Math.min(i, 5) * 0.06}>
             <figure className="flex h-full flex-col rounded-[20px] bg-surface p-6 sm:p-8">
-              {(t.rating || t.mine) && (
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  {t.rating ? <Stars value={t.rating} /> : <span />}
-                  {t.mine && <span className="rounded-full bg-bg px-3 py-1 text-[12px] text-muted">Ваш отзыв</span>}
-                </div>
-              )}
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <Stars value={t.rating} />
+                {t.mine && <span className="rounded-full bg-bg px-3 py-1 text-[12px] text-muted">Ваш отзыв</span>}
+              </div>
               <blockquote className="flex-1 whitespace-pre-line break-words text-[17px] leading-[1.6] text-ink">
                 «{t.quote}»
               </blockquote>

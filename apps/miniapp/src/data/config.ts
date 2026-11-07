@@ -5,29 +5,27 @@ import type { ColumnId, VideoFormat } from "./types";
 export const COLUMNS: { id: ColumnId; title: string; short: string; icon: LucideIcon; hint: string }[] = [
   { id: "todo", title: "Задачи", short: "Задачи", icon: Inbox, hint: "Исходник и ТЗ от админа" },
   { id: "doing", title: "В работе", short: "В работе", icon: Scissors, hint: "Монтажёр монтирует" },
-  { id: "review", title: "Готово к проверке", short: "Проверка", icon: Eye, hint: "Сдана новая версия" },
+  { id: "review", title: "Готово к проверке", short: "Проверка", icon: Eye, hint: "Видео загружено — админ смотрит" },
   { id: "revisions", title: "На правках", short: "Правки", icon: RotateCcw, hint: "Вернули с комментариями" },
-  { id: "ready", title: "К выкладке", short: "Выкладка", icon: CheckCircle2, hint: "Принято · оплата начислена" },
-  { id: "published", title: "Опубликовано", short: "Архив", icon: Megaphone, hint: "Ролик выложен" },
+  { id: "ready", title: "К выкладке", short: "Выкладка", icon: CheckCircle2, hint: "Принято админом · ждёт выкладки" },
+  { id: "published", title: "Опубликовано", short: "Архив", icon: Megaphone, hint: "Ролик выложен · оплата к выплате" },
 ];
 
 export const columnById = (id: ColumnId) => COLUMNS.find((c) => c.id === id)!;
 
-/** Столбцы, в которые переводит только админ */
+/**
+ * Монтажёр свободно двигает свою карточку между «Задачи», «В работе» и «Готово к проверке»
+ * (взял по ошибке — вернул в задачи, забыл правку — забрал с проверки).
+ * «На правках» ставит админ (с комментарием), «К выкладке» и «Опубликовано» — тоже только админ;
+ * оттуда монтажёр карточку уже не двигает.
+ */
+export const EDITOR_COLUMNS: ColumnId[] = ["todo", "doing", "review"];
 export const ADMIN_ONLY_COLUMNS: ColumnId[] = ["revisions", "ready", "published"];
+/** Ролик одобрен админом — монтажёр его больше не трогает */
+export const LOCKED_COLUMNS: ColumnId[] = ["ready", "published"];
 
-/** Куда монтажёр может двигать свою карточку */
-export const EDITOR_FLOW: Record<ColumnId, ColumnId[]> = {
-  todo: ["doing"],
-  doing: ["review"],
-  revisions: ["review"],
-  review: [],
-  ready: [],
-  published: [],
-};
-
-/** После принятия (К выкладке / Опубликовано) начисляется оплата */
-export const ACCEPTED_COLUMNS: ColumnId[] = ["ready", "published"];
+/** Ролик в «Опубликовано» — оплата стоит «к выплате». Очистка опубликованных убирает и её */
+export const PAYABLE_COLUMN: ColumnId = "published";
 
 export const FORMATS: VideoFormat[] = ["9:16", "1:1", "16:9"];
 

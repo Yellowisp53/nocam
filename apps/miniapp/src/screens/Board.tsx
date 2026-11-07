@@ -16,7 +16,8 @@ import { COLUMNS } from "../data/config";
 import { canMove, editors, isOverdue, useStore, visibleTasks } from "../data/store";
 import type { ColumnId, Task } from "../data/types";
 import { useNav } from "../lib/nav";
-import { haptic } from "../lib/telegram";
+import { confirmDialog, haptic } from "../lib/telegram";
+import { useToast } from "../components/Toast";
 import { TaskCard } from "../components/TaskCard";
 import { useTaskFlow } from "../components/TaskFlow";
 import { Avatar, IconBtn, Logo, Screen } from "../components/ui";
@@ -201,8 +202,18 @@ function Column({
   activeTask?: Task;
   onOpen: (t: Task) => void;
 }) {
-  const { me } = useStore();
+  const { me, actions } = useStore();
+  const toast = useToast();
   const col = COLUMNS.find((c) => c.id === id)!;
+  const canClear = id === "published" && me.role === "admin" && tasks.length > 0;
+
+  const clear = async () => {
+    if (!(await confirmDialog("Убрать все опубликованные ролики? Суммы «к выплате» у монтажёров обнулятся."))) return;
+    const res = actions.clearPublished();
+    if (!res.ok) return toast(res.error, "error");
+    haptic.impact("medium");
+    toast("Опубликованные ролики убраны");
+  };
   const Icon = col.icon;
   const { setNodeRef, isOver } = useDroppable({ id });
   const dropAllowed = activeTask ? canMove(me, activeTask, id).ok : false;
@@ -218,6 +229,11 @@ function Column({
         />
         <h2 className="text-[14px] font-semibold">{col.title}</h2>
         <span className="text-[13px] tabular-nums text-hint">{tasks.length}</span>
+        {canClear && (
+          <button type="button" onClick={clear} className="ml-auto rounded-full bg-card px-3 py-1 text-[12px] font-medium text-danger active:bg-soft">
+            Очистить
+          </button>
+        )}
       </div>
       <div
         ref={setNodeRef}

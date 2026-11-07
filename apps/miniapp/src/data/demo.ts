@@ -252,7 +252,6 @@ export function createDemoState(now = Date.now()): State {
       versions: [{ id: "v-9-1", n: 1, url: clip.dentist.url, poster: clip.dentist.poster, at: t(-4 * D), byId: "u-egor" }],
       revisions: [],
       comments: [],
-      acceptedAt: t(-3 * D),
       history: story(t(-7 * D), "u-egor", [
         ["doing", t(-6 * D)],
         ["review", t(-4 * D)],
@@ -274,7 +273,6 @@ export function createDemoState(now = Date.now()): State {
       versions: [{ id: "v-10-1", n: 1, url: clip.clothing.url, poster: clip.clothing.poster, at: t(-2 * D), byId: "u-max" }],
       revisions: [],
       comments: [],
-      acceptedAt: t(-1 * D),
       clientFeedback: { liked: true, comment: "Супер, выкладываем в пятницу!", at: t(-20 * H), versionId: "v-10-1" },
       history: story(t(-6 * D), "u-max", [
         ["doing", t(-5 * D)],
@@ -298,7 +296,6 @@ export function createDemoState(now = Date.now()): State {
       versions: [{ id: "v-11-1", n: 1, url: clip.dentist.url, poster: clip.dentist.poster, at: t(-11 * D), byId: "u-max" }],
       revisions: [],
       comments: [],
-      acceptedAt: t(-10 * D),
       publishedAt: t(-8 * D),
       history: story(t(-14 * D), "u-max", [
         ["doing", t(-13 * D)],
@@ -322,7 +319,6 @@ export function createDemoState(now = Date.now()): State {
       versions: [{ id: "v-12-1", n: 1, url: clip.realty.url, poster: clip.realty.poster, at: t(-16 * D), byId: "u-egor" }],
       revisions: [],
       comments: [],
-      acceptedAt: t(-15 * D),
       publishedAt: t(-12 * D),
       history: story(t(-18 * D), "u-egor", [
         ["doing", t(-17 * D)],
@@ -346,7 +342,6 @@ export function createDemoState(now = Date.now()): State {
       versions: [{ id: "v-13-1", n: 1, url: clip.dentist.url, poster: clip.dentist.poster, at: t(-21 * D), byId: "u-kirill" }],
       revisions: [],
       comments: [],
-      acceptedAt: t(-20 * D),
       publishedAt: t(-18 * D),
       history: story(t(-24 * D), "u-kirill", [
         ["doing", t(-23 * D)],
@@ -358,7 +353,7 @@ export function createDemoState(now = Date.now()): State {
   ];
 
   return {
-    version: 1,
+    version: 2,
     currentUserId: ADMIN_ID,
     users: demoUsers,
     categories: [
@@ -368,11 +363,6 @@ export function createDemoState(now = Date.now()): State {
       { id: "c-clinic", name: "Клиника «Эмаль»", description: "Серия роликов от лица врача" },
     ],
     tasks,
-    payouts: [
-      { id: "p-1", userId: "u-egor", amount: 2000, at: t(-11 * D), note: "Перевод на карту" },
-      { id: "p-2", userId: "u-kirill", amount: 1500, at: t(-17 * D), note: "Перевод на карту" },
-      { id: "p-3", userId: "u-max", amount: 1500, at: t(-7 * D), note: "За «Чистку зубов»" },
-    ],
     defaultPrices: { ...DEFAULT_PRICES },
   };
 }
