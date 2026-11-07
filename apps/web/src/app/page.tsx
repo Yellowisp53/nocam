@@ -3,6 +3,8 @@ import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/sections/Hero";
 import { Niches } from "@/components/sections/Niches";
 import { Works } from "@/components/sections/Works";
+import { Cases } from "@/components/sections/Cases";
+import { About } from "@/components/sections/About";
 import { Services } from "@/components/sections/Services";
 import { HowWeWork } from "@/components/sections/HowWeWork";
 import { Process } from "@/components/sections/Process";
@@ -20,6 +22,8 @@ export default function Home() {
         <Hero />
         <Niches />
         <Works />
+        <Cases />
+        <About />
         <Services />
         <HowWeWork />
         <Process />
