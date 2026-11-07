@@ -1,0 +1,18 @@
+{
+  "name": "nocam",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @nocam/web",
+    "dev:miniapp": "npm run dev -w @nocam/miniapp",
+    "build:web": "npm run build -w @nocam/web",
+    "build:miniapp": "npm run build -w @nocam/miniapp",
+    "build": "npm run build:web && npm run build:miniapp",
+    "telegram:setup": "node --env-file=.env scripts/telegram-setup.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

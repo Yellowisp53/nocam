@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+.env
+.env.*
+!.env.example
+.vercel
+.DS_Store
+Thumbs.db
+*.log
+# исходники роликов (большие) — в git только сжатые версии из public/
+/raw/
