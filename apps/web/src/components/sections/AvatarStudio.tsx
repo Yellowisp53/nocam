@@ -17,13 +17,14 @@ const BARS = [0.35, 0.7, 0.5, 0.95, 0.6, 0.8, 0.4, 0.9, 0.55, 0.75, 0.45, 0.65];
 
 export function AvatarStudio() {
   const [avatarId, setAvatarId] = useState<AvatarId>(cfg.avatars[0].id);
-  const [voiceId, setVoiceId] = useState<VoiceId>("f-energy");
+  const [voiceId, setVoiceId] = useState<VoiceId>("m-confident");
   const [brand, setBrand] = useState("");
 
   const avatar = cfg.avatars.find((a) => a.id === avatarId)!;
   const voice = cfg.voices.find((v) => v.id === voiceId)!;
   const brandName = brand.trim() ? `«${brand.trim()}»` : cfg.brandFallback;
-  const line = avatar.line.replace("{brand}", brandName);
+  const filled = avatar.line.replace("{brand}", brandName);
+  const line = filled.charAt(0).toUpperCase() + filled.slice(1);
 
   const send = () =>
     prefillLead({

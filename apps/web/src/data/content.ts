@@ -321,12 +321,12 @@ export const avatarStudio = {
   subtitle: "Выберите ИИ-аватара и голос — он станет лицом вашего бренда и будет рассказывать о продукте в каждом ролике.",
   brandFallback: "ваш продукт",
   avatars: [
-    { id: "alina", name: "Алина", style: "Бизнес · энергичная", image: "/avatars/alina.jpg", line: "Покажу, почему {brand} выбирают каждый день" },
-    { id: "artem", name: "Артём", style: "Деловой · уверенный", image: "/avatars/artem.jpg", line: "{brand} — решение, которое экономит ваше время" },
+    { id: "artem", name: "Артём", style: "Предприниматель", image: "/avatars/artem.jpg", line: "{brand} — решение, которое экономит ваше время" },
+    { id: "olga", name: "Ольга", style: "Риелтор · недвижимость", image: "/avatars/olga.jpg", line: "Расскажу, как {brand} помогает найти идеальную квартиру" },
     { id: "maria", name: "Мария", style: "Врач · клиника", image: "/avatars/maria.jpg", line: "Расскажу, как {brand} помогает сохранить здоровье" },
     { id: "sofia", name: "София", style: "Эксперт · строгий стиль", image: "/avatars/sofia.jpg", line: "Объясню простыми словами, как работает {brand}" },
-    { id: "denis", name: "Денис", style: "Эксперт · консультант", image: "/avatars/denis.jpg", line: "Разберём главные вопросы про {brand} за 30 секунд" },
-    { id: "kate", name: "Катя", style: "Lifestyle · блогер", image: "/avatars/kate.jpg", line: "Я попробовала {brand} — и вот что скажу" },
+    { id: "viktor", name: "Виктор", style: "Эксперт · владелец бизнеса", image: "/avatars/viktor.jpg", line: "Разберём главные вопросы про {brand} за 30 секунд" },
+    { id: "denis", name: "Денис", style: "Консультант · студия", image: "/avatars/denis.jpg", line: "Почему клиенты выбирают {brand}? Рассказываю" },
   ],
   voices: [
     { id: "m-confident", name: "Уверенный", text: "Мужской · низкий тембр" },
