@@ -1,7 +1,7 @@
 import { CheckCircle2, Eye, Inbox, Megaphone, RotateCcw, Scissors, type LucideIcon } from "lucide-react";
 import type { ColumnId, VideoFormat } from "./types";
 
-/** ✍️ Столбцы доски — названия можно поменять здесь */
+/** TODO: Столбцы доски — названия можно поменять здесь */
 export const COLUMNS: { id: ColumnId; title: string; short: string; icon: LucideIcon; hint: string }[] = [
   { id: "todo", title: "Задачи", short: "Задачи", icon: Inbox, hint: "Исходник и ТЗ от админа" },
   { id: "doing", title: "В работе", short: "В работе", icon: Scissors, hint: "Монтажёр монтирует" },
@@ -31,7 +31,7 @@ export const ACCEPTED_COLUMNS: ColumnId[] = ["ready", "published"];
 
 export const FORMATS: VideoFormat[] = ["9:16", "1:1", "16:9"];
 
-/** ✍️ Цены за ролик монтажёру по умолчанию (меняются во вкладке «Команда») */
+/** TODO: Цены за ролик монтажёру по умолчанию (меняются во вкладке «Команда») */
 export const DEFAULT_PRICES: Record<VideoFormat, number> = {
   "9:16": 1500,
   "1:1": 1200,
