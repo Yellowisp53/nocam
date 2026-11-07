@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { services, system } from "@/data/content";
+import { services } from "@/data/content";
 import { Reveal } from "@/components/ui/Reveal";
 import { Section, SectionHeader } from "@/components/ui/Section";
 
@@ -11,7 +11,7 @@ export function Services() {
       <Reveal>
         <SectionHeader
           title="Услуги"
-          subtitle={`Мы не продаём ролики поштучно — строим систему видеоконтента: ${system.videosPerMonth} роликов в месяц, по ${system.videosPerDay} каждый день. Вот из чего она состоит.`}
+          subtitle="Мы не продаём ролики поштучно — строим систему видеоконтента: от 1 до 3 готовых роликов каждый день. Вот из чего она состоит."
         />
       </Reveal>
 

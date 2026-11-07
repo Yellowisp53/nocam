@@ -1,6 +1,12 @@
 /** 1150 → «$1 150» (цены в долларах США) */
 export const formatUsd = (n: number) => `$${Math.round(n).toLocaleString("ru-RU")}`;
 
+/** 2 → «2 ролика в день» */
+export const perDayLabel = (n: number) => `${n} ${plural(n, ["ролик", "ролика", "роликов"])} в день`;
+
+/** 60 → «60 роликов» */
+export const videosLabel = (n: number) => `${n} ${plural(n, ["ролик", "ролика", "роликов"])}`;
+
 /** Склонение: plural(5, ["ролик", "ролика", "роликов"]) → «роликов» */
 export function plural(n: number, forms: [string, string, string]) {
   const n10 = n % 10;

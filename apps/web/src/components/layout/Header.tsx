@@ -1,15 +1,17 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, UserRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { nav } from "@/data/content";
+import { logout, openAuth, useAccount } from "@/lib/auth";
 import { ButtonLink } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const account = useAccount();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -36,12 +38,12 @@ export function Header() {
           <Logo />
         </a>
 
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Основное меню">
+        <nav className="hidden items-center gap-8 lg:flex" aria-label="Основное меню">
           {nav.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="text-[15px] text-muted transition-colors duration-200 hover:text-ink"
+              className="whitespace-nowrap text-[15px] text-muted transition-colors duration-200 hover:text-ink"
             >
               {item.label}
             </a>
@@ -49,12 +51,13 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <AccountButton className="max-lg:hidden" />
           <ButtonLink href="#contact" className="max-sm:hidden" size="md">
             Обсудить проект
           </ButtonLink>
           <button
             type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-surface md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-surface lg:hidden"
             aria-label={open ? "Закрыть меню" : "Открыть меню"}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
@@ -67,7 +70,7 @@ export function Header() {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-x-0 top-16 bottom-0 bg-white md:hidden"
+            className="fixed inset-x-0 top-16 bottom-0 bg-white lg:hidden"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -84,6 +87,18 @@ export function Header() {
                   {item.label}
                 </a>
               ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  if (account) logout();
+                  else openAuth();
+                }}
+                className="heading flex items-center justify-between border-b border-line py-5 text-left text-[28px]"
+              >
+                {account ? `Выйти (${account.name})` : "Войти"}
+                {account ? <LogOut className="h-6 w-6" strokeWidth={1.5} /> : <UserRound className="h-6 w-6" strokeWidth={1.5} />}
+              </button>
               <ButtonLink href="#contact" size="lg" className="mt-8 w-full" onClick={() => setOpen(false)}>
                 Обсудить проект
               </ButtonLink>
@@ -92,5 +107,55 @@ export function Header() {
         )}
       </AnimatePresence>
     </header>
+  );
+}
+
+function AccountButton({ className = "" }: { className?: string }) {
+  const account = useAccount();
+  const [menu, setMenu] = useState(false);
+
+  if (!account)
+    return (
+      <button
+        type="button"
+        onClick={() => openAuth()}
+        className={`inline-flex h-11 items-center gap-2 rounded-full px-4 text-[15px] text-muted transition-colors hover:bg-surface hover:text-ink ${className}`}
+      >
+        <UserRound className="h-4 w-4" strokeWidth={1.75} />
+        Войти
+      </button>
+    );
+
+  return (
+    <div className={`relative ${className}`} onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setMenu(false)}>
+      <button
+        type="button"
+        onClick={() => setMenu((v) => !v)}
+        aria-expanded={menu}
+        aria-label={`Аккаунт: ${account.name}`}
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface font-display text-[16px] font-semibold uppercase transition-colors hover:bg-surface-2"
+      >
+        {account.name[0]}
+      </button>
+      {menu && (
+        <div className="absolute right-0 top-[calc(100%+8px)] w-[240px] rounded-[16px] border border-line bg-bg p-2 shadow-lg">
+          <div className="px-3 py-2">
+            <p className="truncate text-[15px] font-medium">{account.name}</p>
+            <p className="truncate text-[13px] text-muted">{account.email}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setMenu(false);
+              logout();
+            }}
+            className="flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 text-left text-[15px] transition-colors hover:bg-surface"
+          >
+            <LogOut className="h-4 w-4" strokeWidth={1.75} />
+            Выйти
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

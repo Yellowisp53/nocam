@@ -1,10 +1,17 @@
 /**
- * Отправка заявки. Сейчас — имитация (задержка + сохранение в localStorage).
- * Когда появится бэкенд: заменить тело submitLead на fetch(API_URL, …) — компоненты менять не нужно.
+ * Письмо с сайта. Сейчас — имитация (задержка + сохранение в localStorage).
+ * Когда появится бэкенд: заменить тело submitLead на fetch(API_URL, …) — сервер перешлёт письмо в Telegram.
+ * Компоненты менять не нужно.
  */
+import type { PlanId } from "@/data/content";
+
 export type Lead = {
   name: string;
   contact: string;
+  /** кто клиент: бизнес, ниша, город */
+  about: string;
+  /** интересующий тариф; "" — пока не знает */
+  plan: PlanId | "";
   task: string;
 };
 
@@ -33,14 +40,17 @@ export function validateLead(lead: Lead): LeadErrors {
   const isTelegram = /^@?[a-zA-Z][a-zA-Z0-9_]{4,31}$/.test(c) || /t\.me\/[a-zA-Z0-9_]{5,}/.test(c);
   if (!c) errors.contact = "Оставьте телефон или Telegram";
   else if (!isPhone && !isTelegram) errors.contact = "Например: +375 29 000-00-00 или @username";
+  if (lead.about.trim().length < 3) errors.about = "Расскажите пару слов о себе";
   if (lead.task.trim().length < 10) errors.task = "Опишите задачу хотя бы в паре слов";
   return errors;
 }
 
-/** Калькулятор → форма: подставить расчёт в поле «Задача» */
+/** Тарифы и калькулятор → письмо: подставить тариф и текст в «Задачу» */
 export const PREFILL_EVENT = "nocam:prefill";
 
-export function prefillLead(task: string) {
-  window.dispatchEvent(new CustomEvent<string>(PREFILL_EVENT, { detail: task }));
+export type Prefill = { task: string; plan?: PlanId };
+
+export function prefillLead(detail: Prefill) {
+  window.dispatchEvent(new CustomEvent<Prefill>(PREFILL_EVENT, { detail }));
   document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
 }

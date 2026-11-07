@@ -2,10 +2,11 @@
 
 import { Check, Lock } from "lucide-react";
 import { useMemo, useState } from "react";
-import { calculator as cfg, plans, system, type PlanId } from "@/data/content";
-import { formatUsd, plural } from "@/lib/format";
+import { calculator as cfg, plans, system, videosPerMonth, type PerDay, type PlanId } from "@/data/content";
+import { formatUsd, perDayLabel, videosLabel } from "@/lib/format";
 import { prefillLead } from "@/lib/leads";
 import { Button } from "@/components/ui/Button";
+import { PerDayPicker } from "@/components/ui/PerDayPicker";
 import { Reveal } from "@/components/ui/Reveal";
 import { Section, SectionHeader } from "@/components/ui/Section";
 
@@ -18,30 +19,28 @@ export function pickPlan(needs: NeedId[]): PlanId {
   return "edit";
 }
 
-export function calculate(needs: NeedId[], months: number) {
+export function calculate(needs: NeedId[], perDay: PerDay) {
   const plan = plans.find((p) => p.id === pickPlan(needs))!;
-  const videos = system.videosPerMonth * months;
-  const total = plan.price * months;
-  return { plan, videos, total, perVideo: plan.price / system.videosPerMonth };
+  const videos = videosPerMonth(perDay);
+  const price = plan.prices[perDay];
+  return { plan, videos, price, perVideo: price / videos };
 }
-
-const monthsLabel = (n: number) => `${n} ${plural(n, ["месяц", "месяца", "месяцев"])}`;
 
 export function Calculator() {
   const [needs, setNeeds] = useState<NeedId[]>(["edit", "avatar"]);
-  const [months, setMonths] = useState(3);
+  const [perDay, setPerDay] = useState<PerDay>(system.defaultPerDay);
 
-  const r = useMemo(() => calculate(needs, months), [needs, months]);
-  const fill = ((months - cfg.minMonths) / (cfg.maxMonths - cfg.minMonths)) * 100;
+  const r = useMemo(() => calculate(needs, perDay), [needs, perDay]);
   // «Под ключ» уже включает ИИ-аватаров
   const included = (id: NeedId) => needs.includes(id) || (id === "avatar" && needs.includes("turnkey"));
 
   const toggle = (id: NeedId) => setNeeds((n) => (n.includes(id) ? n.filter((x) => x !== id) : [...n, id]));
 
   const send = () =>
-    prefillLead(
-      `Подбор тарифа с сайта: «${r.plan.name}» на ${monthsLabel(months)} — ${r.videos} роликов, ${formatUsd(r.total)} (${formatUsd(r.plan.price)} в месяц).`,
-    );
+    prefillLead({
+      plan: r.plan.id,
+      task: `Подбор тарифа с сайта: «${r.plan.name}», ${perDayLabel(perDay)} (${videosLabel(r.videos)} в месяц) — ${formatUsd(r.price)} в месяц.`,
+    });
 
   return (
     <Section id="calculator" surface>
@@ -92,26 +91,10 @@ export function Calculator() {
           </fieldset>
 
           <div className="mt-9">
-            <div className="flex items-baseline justify-between">
-              <label htmlFor="months" className="text-[15px] font-medium">
-                Срок работы
-              </label>
-              <span className="font-display text-[28px] font-semibold tabular-nums tracking-[-0.03em]">
-                {monthsLabel(months)}
-              </span>
-            </div>
-            <input
-              id="months"
-              type="range"
-              min={cfg.minMonths}
-              max={cfg.maxMonths}
-              value={months}
-              onChange={(e) => setMonths(Number(e.target.value))}
-              className="range-ink mt-4 w-full"
-              style={{ ["--fill" as string]: `${fill}%` }}
-            />
+            <p className="text-[15px] font-medium">Сколько роликов в день</p>
+            <PerDayPicker value={perDay} onChange={setPerDay} className="mt-4" />
             <p className="mt-3 text-[14px] text-muted">
-              {system.videosPerDay} ролика каждый день — {system.videosPerMonth} в месяц
+              {perDayLabel(perDay)} — {videosLabel(r.videos)} в месяц. Объём можно поменять со следующего месяца.
             </p>
           </div>
         </Reveal>
@@ -121,20 +104,20 @@ export function Calculator() {
             <p className="text-[15px] text-white/60">Ваш тариф</p>
             <p className="heading mt-2 text-[28px] md:text-[32px]">{r.plan.name}</p>
             <p className="mt-6 font-display text-[44px] font-semibold leading-none tracking-[-0.04em] tabular-nums md:text-[52px]">
-              {formatUsd(r.total)}
+              {formatUsd(r.price)}
             </p>
-            <p className="mt-3 text-[15px] text-white/60">за {monthsLabel(months)}</p>
+            <p className="mt-3 text-[15px] text-white/60">в месяц</p>
 
             <dl className="mt-8 space-y-3 border-t border-white/10 pt-6 text-[15px]">
-              <Row label="В месяц" value={formatUsd(r.plan.price)} />
-              <Row label="Роликов за срок" value={r.videos.toLocaleString("ru-RU")} />
+              <Row label="Роликов в день" value={String(perDay)} />
+              <Row label="Роликов в месяц" value={String(r.videos)} />
               <Row label="Цена ролика" value={`≈ ${formatUsd(r.perVideo)}`} />
             </dl>
 
             <Button variant="inverse" size="lg" className="mt-8 w-full" onClick={send}>
               Обсудить тариф
             </Button>
-            <p className="mt-4 text-center text-[13px] text-white/45">Подставим расчёт в заявку — останется оставить контакт</p>
+            <p className="mt-4 text-center text-[13px] text-white/45">Подставим расчёт в письмо — останется рассказать о себе</p>
           </div>
         </Reveal>
       </div>

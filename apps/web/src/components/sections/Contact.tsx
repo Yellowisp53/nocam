@@ -3,13 +3,14 @@
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight, CheckCircle2, Loader2, Mail, Send } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
-import { contact, site, telegramUrl } from "@/data/content";
-import { PREFILL_EVENT, submitLead, validateLead, type Lead, type LeadErrors } from "@/lib/leads";
-import { Button, ButtonLink } from "@/components/ui/Button";
+import { contact, plans, site, telegramUrl } from "@/data/content";
+import { PREFILL_EVENT, submitLead, validateLead, type Lead, type LeadErrors, type Prefill } from "@/lib/leads";
+import { Button } from "@/components/ui/Button";
+import { Field, inputClass } from "@/components/ui/Modal";
 import { Reveal } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 
-const empty: Lead = { name: "", contact: "", task: "" };
+const empty: Lead = { name: "", contact: "", about: "", plan: "", task: "" };
 
 export function Contact() {
   const [lead, setLead] = useState<Lead>(empty);
@@ -18,18 +19,18 @@ export function Contact() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const f = contact.form;
 
-  // калькулятор и тарифы подставляют текст в «Задачу»
+  // калькулятор и тарифы подставляют тариф и текст в «Задачу»
   useEffect(() => {
     const onPrefill = (e: Event) => {
-      const text = (e as CustomEvent<string>).detail;
+      const { task, plan } = (e as CustomEvent<Prefill>).detail;
       setStatus("idle");
-      setLead((l) => ({ ...l, task: text }));
+      setLead((l) => ({ ...l, task, plan: plan ?? l.plan }));
     };
     window.addEventListener(PREFILL_EVENT, onPrefill);
     return () => window.removeEventListener(PREFILL_EVENT, onPrefill);
   }, []);
 
-  const update = (key: keyof Lead, value: string) => {
+  const update = <K extends keyof Lead>(key: K, value: Lead[K]) => {
     const next = { ...lead, [key]: value };
     setLead(next);
     if (touched) setErrors(validateLead(next));
@@ -55,14 +56,10 @@ export function Contact() {
           <h2 className="heading text-[40px] md:text-[64px]">{contact.title}</h2>
           <p className="mt-5 max-w-[460px] text-[17px] leading-[1.6] text-white/60 md:text-[18px]">{contact.subtitle}</p>
 
-          <ButtonLink href={telegramUrl()} target="_blank" rel="noreferrer" variant="inverse" size="lg" className="mt-9">
-            <Send className="h-4 w-4" strokeWidth={1.75} />
-            {contact.telegramCta}
-          </ButtonLink>
-
-          <ul className="mt-12 space-y-1 border-t border-white/10 pt-6 text-[16px]">
+          <ul className="mt-10 space-y-1 border-t border-white/10 pt-6 text-[16px]">
             <ContactRow icon={<Send className="h-4 w-4" strokeWidth={1.5} />} href={telegramUrl()} label={`@${site.contacts.telegram}`} external />
-            <ContactRow icon={<Mail className="h-4 w-4" strokeWidth={1.5} />} href={`mailto:${site.contacts.email}`} label={site.contacts.email} />          </ul>
+            <ContactRow icon={<Mail className="h-4 w-4" strokeWidth={1.5} />} href={`mailto:${site.contacts.email}`} label={site.contacts.email} />
+          </ul>
         </Reveal>
 
         <Reveal delay={0.08}>
@@ -94,26 +91,60 @@ export function Contact() {
                   noValidate
                   className="flex flex-col gap-5"
                 >
-                  <Field label={f.name} error={errors.name} htmlFor="lead-name">
+                  <h3 className="heading text-[24px]">{f.title}</h3>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field label={f.name} error={errors.name} htmlFor="lead-name">
+                      <input
+                        id="lead-name"
+                        autoComplete="name"
+                        value={lead.name}
+                        onChange={(e) => update("name", e.target.value)}
+                        className={inputClass(!!errors.name)}
+                        placeholder={f.namePlaceholder}
+                      />
+                    </Field>
+                    <Field label={f.contact} error={errors.contact} htmlFor="lead-contact">
+                      <input
+                        id="lead-contact"
+                        autoComplete="tel"
+                        value={lead.contact}
+                        onChange={(e) => update("contact", e.target.value)}
+                        className={inputClass(!!errors.contact)}
+                        placeholder="+375 29… или @username"
+                      />
+                    </Field>
+                  </div>
+                  <Field label={f.about} error={errors.about} htmlFor="lead-about">
                     <input
-                      id="lead-name"
-                      autoComplete="name"
-                      value={lead.name}
-                      onChange={(e) => update("name", e.target.value)}
-                      className={inputClass(!!errors.name)}
-                      placeholder="Как к вам обращаться"
+                      id="lead-about"
+                      autoComplete="organization"
+                      value={lead.about}
+                      onChange={(e) => update("about", e.target.value)}
+                      className={inputClass(!!errors.about)}
+                      placeholder={f.aboutPlaceholder}
                     />
                   </Field>
-                  <Field label={f.contact} error={errors.contact} htmlFor="lead-contact">
-                    <input
-                      id="lead-contact"
-                      autoComplete="tel"
-                      value={lead.contact}
-                      onChange={(e) => update("contact", e.target.value)}
-                      className={inputClass(!!errors.contact)}
-                      placeholder="+375 29 000-00-00 или @username"
-                    />
-                  </Field>
+                  <fieldset>
+                    <legend className="mb-2 block text-[14px] font-medium">{f.plan}</legend>
+                    <div className="flex flex-wrap gap-2">
+                      {[...plans.map((p) => ({ id: p.id, name: p.name })), { id: "" as const, name: f.planUnsure }].map((p) => {
+                        const on = lead.plan === p.id;
+                        return (
+                          <button
+                            key={p.id || "unsure"}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => update("plan", p.id)}
+                            className={`h-10 rounded-full border px-4 text-[14px] transition-colors duration-200 ${
+                              on ? "border-ink bg-ink text-white" : "border-line hover:bg-surface"
+                            }`}
+                          >
+                            {p.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
                   <Field label={f.task} error={errors.task} htmlFor="lead-task">
                     <textarea
                       id="lead-task"
@@ -138,33 +169,6 @@ export function Contact() {
         </Reveal>
       </div>
     </Section>
-  );
-}
-
-const inputClass = (error: boolean) =>
-  `h-12 w-full rounded-[12px] border bg-bg px-4 text-[16px] text-ink outline-none transition-colors duration-200 placeholder:text-[#a3a3a3] focus:border-ink ${
-    error ? "border-danger" : "border-line hover:border-[#d4d4d4]"
-  }`;
-
-function Field({
-  label,
-  error,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  error?: string;
-  htmlFor: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label htmlFor={htmlFor} className="mb-2 block text-[14px] font-medium">
-        {label}
-      </label>
-      {children}
-      {error && <p className="mt-1.5 text-[13px] text-danger">{error}</p>}
-    </div>
   );
 }
 
