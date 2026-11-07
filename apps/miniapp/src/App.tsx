@@ -29,7 +29,7 @@ export default function App() {
 
   let screen;
   if (top?.name === "task") screen = <TaskDetail id={top.id} />;
-  else if (top?.name === "newTask") screen = <NewTask />;
+  else if (top?.name === "newTask") screen = <NewTask assigneeId={top.assigneeId} />;
   else if (top?.name === "client") screen = <ClientReview id={top.id} />;
   else if (top?.name === "member") screen = <Member id={top.id} />;
   else if (top?.name === "categories") screen = <Categories />;

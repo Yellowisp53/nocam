@@ -5,7 +5,7 @@ export type Tab = "board" | "attention" | "team" | "cabinet" | "profile";
 
 export type Route =
   | { name: "task"; id: string }
-  | { name: "newTask" }
+  | { name: "newTask"; assigneeId?: string }
   | { name: "client"; id: string }
   | { name: "member"; id: string }
   | { name: "categories" };

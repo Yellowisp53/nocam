@@ -19,7 +19,7 @@ export function Contact() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const f = contact.form;
 
-  // калькулятор и тарифы подставляют тариф и текст в «Задачу»
+  // тарифы и блок аватаров подставляют тариф и текст в «Задачу»
   useEffect(() => {
     const onPrefill = (e: Event) => {
       const { task, plan } = (e as CustomEvent<Prefill>).detail;

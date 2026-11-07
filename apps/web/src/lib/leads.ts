@@ -45,7 +45,7 @@ export function validateLead(lead: Lead): LeadErrors {
   return errors;
 }
 
-/** Тарифы и калькулятор → письмо: подставить тариф и текст в «Задачу» */
+/** Тарифы и блок аватаров → письмо: подставить тариф и текст в «Задачу» */
 export const PREFILL_EVENT = "nocam:prefill";
 
 export type Prefill = { task: string; plan?: PlanId };

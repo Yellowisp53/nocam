@@ -8,7 +8,7 @@ import { Cases } from "@/components/sections/Cases";
 import { Services } from "@/components/sections/Services";
 import { HowWeWork } from "@/components/sections/HowWeWork";
 import { Process } from "@/components/sections/Process";
-import { Calculator } from "@/components/sections/Calculator";
+import { AvatarStudio } from "@/components/sections/AvatarStudio";
 import { Pricing } from "@/components/sections/Pricing";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { Faq } from "@/components/sections/Faq";
@@ -27,7 +27,7 @@ export default function Home() {
         <HowWeWork />
         <Process />
         <Pricing />
-        <Calculator />
+        <AvatarStudio />
         <Faq />
         <Testimonials />
         <Contact />

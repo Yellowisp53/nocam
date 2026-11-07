@@ -10,14 +10,14 @@ import { useToast } from "../components/Toast";
 import { CategorySheet } from "./Categories";
 import { Avatar, Card, Field, GroupTitle, Screen, Segmented } from "../components/ui";
 
-export function NewTask() {
+export function NewTask({ assigneeId: initialAssignee }: { assigneeId?: string }) {
   const { state, actions } = useStore();
   const nav = useNav();
   const toast = useToast();
 
   const [categoryId, setCategoryId] = useState(state.categories[0]?.id ?? "");
   const [title, setTitle] = useState("");
-  const [assigneeId, setAssigneeId] = useState("");
+  const [assigneeId, setAssigneeId] = useState(initialAssignee ?? "");
   const [deadline, setDeadline] = useState(toLocalInput(Date.now() + 2 * DAY));
   const [format, setFormat] = useState<VideoFormat>("9:16");
   const [duration, setDuration] = useState("30–45 сек");

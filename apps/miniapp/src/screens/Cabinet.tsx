@@ -1,6 +1,7 @@
-import { Film } from "lucide-react";
+import { ChevronRight, Film, KanbanSquare } from "lucide-react";
 import { dueOf, editorStats, useStore, userById } from "../data/store";
 import { formatDate, formatRub, plural } from "../lib/format";
+import { setBoardEditor } from "../lib/boardEditor";
 import { useNav } from "../lib/nav";
 import { confirmDialog } from "../lib/telegram";
 import { useToast } from "../components/Toast";
@@ -42,6 +43,22 @@ export function Member({ id }: { id: string }) {
       onBack={nav.pop}
       main={tasks.length ? { text: "Выплачено — очистить ролики", onClick: clear } : null}
     >
+      <div className="px-4 pb-3">
+        <Card>
+          <button
+            type="button"
+            onClick={() => {
+              setBoardEditor(id);
+              nav.setTab("board");
+            }}
+            className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-soft"
+          >
+            <KanbanSquare className="h-5 w-5" strokeWidth={1.75} />
+            <span className="flex-1 text-[15px]">Доска · {user?.name}</span>
+            <ChevronRight className="h-4 w-4 text-hint" strokeWidth={1.75} />
+          </button>
+        </Card>
+      </div>
       <MemberContent userId={id} />
     </Screen>
   );

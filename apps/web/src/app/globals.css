@@ -69,6 +69,12 @@
   }
 }
 
+/* «Звуковая волна» голоса в блоке аватаров */
+@keyframes wave {
+  from { transform: scaleY(0.35); }
+  to { transform: scaleY(1); }
+}
+
 /* Плейхед в макете редактора */
 @keyframes playhead {
   from { left: 0%; }

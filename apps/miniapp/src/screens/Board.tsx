@@ -16,6 +16,7 @@ import { COLUMNS } from "../data/config";
 import { canMove, editors, isOverdue, useStore, visibleTasks } from "../data/store";
 import type { ColumnId, Task } from "../data/types";
 import { useNav } from "../lib/nav";
+import { setBoardEditor, useBoardEditor } from "../lib/boardEditor";
 import { confirmDialog, haptic } from "../lib/telegram";
 import { useToast } from "../components/Toast";
 import { TaskCard } from "../components/TaskCard";
@@ -26,7 +27,11 @@ export function Board() {
   const { state, me } = useStore();
   const nav = useNav();
   const flow = useTaskFlow();
-  const [assignee, setAssignee] = useState<string>("all");
+  const isAdmin = me.role === "admin";
+  const team = editors(state);
+  // админ ведёт доску одного монтажёра; монтажёр видит только свои карточки
+  const boardEditorId = useBoardEditor(team.map((u) => u.id));
+  const boardEditor = team.find((u) => u.id === boardEditorId);
   const [category, setCategory] = useState<string>("all");
   const [onlyOverdue, setOnlyOverdue] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -36,15 +41,17 @@ export function Board() {
   const tasks = useMemo(
     () =>
       visibleTasks(state, me)
-        .filter((t) => assignee === "all" || t.assigneeId === assignee)
+        .filter((t) => !isAdmin || t.assigneeId === boardEditorId)
         .filter((t) => category === "all" || t.categoryId === category)
         .filter((t) => !onlyOverdue || isOverdue(t))
         .sort((a, b) => a.deadline - b.deadline),
-    [state, me, assignee, category, onlyOverdue],
+    [state, me, isAdmin, boardEditorId, category, onlyOverdue],
   );
   const byColumn = (c: ColumnId) => tasks.filter((t) => t.column === c);
   const activeTask = activeId ? state.tasks.find((t) => t.id === activeId) : undefined;
-  const filtersOn = assignee !== "all" || category !== "all" || onlyOverdue;
+  const filtersOn = category !== "all" || onlyOverdue;
+  const countFor = (userId: string) =>
+    state.tasks.filter((t) => t.assigneeId === userId && ["todo", "doing", "review", "revisions"].includes(t.column)).length;
 
   // мышь — после сдвига на 6px; палец — долгое нажатие (чтобы не мешать прокрутке)
   const sensors = useSensors(
@@ -85,10 +92,10 @@ export function Board() {
           >
             <SlidersHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
           </IconBtn>
-          {me.role === "admin" && (
+          {isAdmin && boardEditor && (
             <button
               type="button"
-              onClick={() => nav.push({ name: "newTask" })}
+              onClick={() => nav.push({ name: "newTask", assigneeId: boardEditor.id })}
               className="inline-flex h-10 items-center gap-1.5 rounded-full bg-ink pl-3 pr-4 text-[14px] font-medium text-card active:opacity-85"
             >
               <Plus className="h-4 w-4" strokeWidth={2} />
@@ -96,6 +103,35 @@ export function Board() {
             </button>
           )}
         </div>
+
+        {/* админ: чью доску смотрим */}
+        {isAdmin && (
+          <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2.5" role="tablist" aria-label="Монтажёр">
+            {team.map((u) => {
+              const on = u.id === boardEditorId;
+              const n = countFor(u.id);
+              return (
+                <button
+                  key={u.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => {
+                    setBoardEditor(u.id);
+                    haptic.select();
+                  }}
+                  className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full pl-1.5 pr-4 text-[14px] font-medium transition-colors ${
+                    on ? "bg-ink text-card" : "bg-card text-ink"
+                  }`}
+                >
+                  <Avatar user={u} size={32} />
+                  {u.name}
+                  <span className={`tabular-nums ${on ? "opacity-60" : "text-hint"}`}>{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* счётчики по столбцам */}
         <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 pb-2.5">
@@ -117,19 +153,6 @@ export function Board() {
 
         {showFilters && (
           <div className="animate-fade space-y-2.5 border-t border-line px-4 py-3">
-            {me.role === "admin" && (
-              <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-                <FilterChip active={assignee === "all"} onClick={() => setAssignee("all")}>
-                  Все монтажёры
-                </FilterChip>
-                {editors(state).map((u) => (
-                  <FilterChip key={u.id} active={assignee === u.id} onClick={() => setAssignee(u.id)}>
-                    <Avatar user={u} size={18} />
-                    {u.name}
-                  </FilterChip>
-                ))}
-              </div>
-            )}
             <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
               <FilterChip active={category === "all"} onClick={() => setCategory("all")}>
                 Все категории
@@ -202,14 +225,17 @@ function Column({
   activeTask?: Task;
   onOpen: (t: Task) => void;
 }) {
-  const { me, actions } = useStore();
+  const { state, me, actions } = useStore();
   const toast = useToast();
   const col = COLUMNS.find((c) => c.id === id)!;
   const canClear = id === "published" && me.role === "admin" && tasks.length > 0;
 
   const clear = async () => {
-    if (!(await confirmDialog("Убрать все опубликованные ролики? Суммы «к выплате» у монтажёров обнулятся."))) return;
-    const res = actions.clearPublished();
+    // на доске админа — карточки одного монтажёра
+    const editorId = tasks[0].assigneeId;
+    const who = state.users.find((u) => u.id === editorId)?.name ?? "монтажёра";
+    if (!(await confirmDialog(`Убрать опубликованные ролики (${who})? Сумма «к выплате» обнулится.`))) return;
+    const res = actions.clearPublished(editorId);
     if (!res.ok) return toast(res.error, "error");
     haptic.impact("medium");
     toast("Опубликованные ролики убраны");
