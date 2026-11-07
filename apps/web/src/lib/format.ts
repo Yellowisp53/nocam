@@ -1,11 +1,5 @@
-const rub = new Intl.NumberFormat("ru-RU", {
-  style: "currency",
-  currency: "RUB",
-  maximumFractionDigits: 0,
-});
-
-/** 12500 → «12 500 ₽» */
-export const formatRub = (n: number) => rub.format(Math.round(n));
+/** 1150 → «$1 150» (цены в долларах США) */
+export const formatUsd = (n: number) => `$${Math.round(n).toLocaleString("ru-RU")}`;
 
 /** Склонение: plural(5, ["ролик", "ролика", "роликов"]) → «роликов» */
 export function plural(n: number, forms: [string, string, string]) {

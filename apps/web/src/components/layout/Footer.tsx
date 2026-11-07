@@ -8,7 +8,7 @@ export function Footer() {
         <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div className="max-w-[320px]">
             <Logo />
-            <p className="mt-4 text-[15px] text-muted">Видео и AI-аватары для бизнеса. Без единой съёмки.</p>
+            <p className="mt-4 text-[15px] text-muted">Видео и ИИ-аватары для бизнеса. Без единой съёмки.</p>
           </div>
           <div className="grid grid-cols-2 gap-x-16 gap-y-3 text-[15px]">
             {nav.map((item) => (

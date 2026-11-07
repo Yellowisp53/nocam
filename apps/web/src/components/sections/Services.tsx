@@ -1,6 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { services } from "@/data/content";
-import { formatRub } from "@/lib/format";
+import { services, system } from "@/data/content";
 import { Reveal } from "@/components/ui/Reveal";
 import { Section, SectionHeader } from "@/components/ui/Section";
 
@@ -12,7 +11,7 @@ export function Services() {
       <Reveal>
         <SectionHeader
           title="Услуги"
-          subtitle="Закрываем видео целиком: от одного ролика до регулярного контента для всех площадок."
+          subtitle={`Мы не продаём ролики поштучно — строим систему видеоконтента: ${system.videosPerMonth} роликов в месяц, по ${system.videosPerDay} каждый день. Вот из чего она состоит.`}
         />
       </Reveal>
 
@@ -20,16 +19,15 @@ export function Services() {
         {services.map((s, i) => (
           <Reveal key={s.id} delay={i * 0.05} className={spans[i]}>
             <a
-              href="#calculator"
+              href="#pricing"
               className="group flex h-full flex-col overflow-hidden rounded-[20px] bg-surface transition-colors duration-300 hover:bg-surface-2"
             >
               <div className="flex flex-1 flex-col p-6 md:p-8">
                 <h3 className="heading text-[26px] md:text-[30px]">{s.title}</h3>
                 <p className="mt-3 max-w-[440px] text-[15px] leading-[1.6] text-muted md:text-[16px]">{s.text}</p>
                 <span className="mt-6 inline-flex items-center gap-1.5 text-[15px] font-medium text-ink">
-                  от {formatRub(s.price)}
-                  {"priceSuffix" in s ? ` ${s.priceSuffix}` : ""}
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={1.75} />
+                  {s.plans}
+                  <ArrowRight className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={1.75} />
                 </span>
               </div>
               <div className="relative mx-3 mb-3 h-[220px] overflow-hidden rounded-[14px] md:mx-4 md:mb-4 md:h-[280px]">

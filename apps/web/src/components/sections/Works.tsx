@@ -57,14 +57,10 @@ export function Works() {
                   {w.niche} · {w.client}
                 </p>
                 <p className="mt-2 text-[16px] leading-[1.55] text-ink">{w.description}</p>
-                <ul className="mt-4 flex flex-wrap gap-2">
-                  {w.results.map((r) => (
-                    <li key={r} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] text-ink-2">
-                      <Check className="h-3.5 w-3.5 text-success" strokeWidth={2} />
-                      {r}
-                    </li>
-                  ))}
-                </ul>
+                <span className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] text-ink-2">
+                  <Check className="h-3.5 w-3.5 text-ink" strokeWidth={2} />
+                  {w.service}
+                </span>
               </div>
             </article>
           </Reveal>

@@ -23,8 +23,8 @@ export default function Home() {
         <Services />
         <HowWeWork />
         <Process />
-        <Calculator />
         <Pricing />
+        <Calculator />
         <Testimonials />
         <Faq />
         <Contact />

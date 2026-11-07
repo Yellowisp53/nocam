@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUpRight, CheckCircle2, Loader2, Mail, Phone, Send } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Loader2, Mail, Send } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { contact, site, telegramUrl } from "@/data/content";
 import { PREFILL_EVENT, submitLead, validateLead, type Lead, type LeadErrors } from "@/lib/leads";
@@ -62,13 +62,7 @@ export function Contact() {
 
           <ul className="mt-12 space-y-1 border-t border-white/10 pt-6 text-[16px]">
             <ContactRow icon={<Send className="h-4 w-4" strokeWidth={1.5} />} href={telegramUrl()} label={`@${site.contacts.telegram}`} external />
-            <ContactRow icon={<Mail className="h-4 w-4" strokeWidth={1.5} />} href={`mailto:${site.contacts.email}`} label={site.contacts.email} />
-            <ContactRow
-              icon={<Phone className="h-4 w-4" strokeWidth={1.5} />}
-              href={`tel:${site.contacts.phone.replace(/[^\d+]/g, "")}`}
-              label={site.contacts.phone}
-            />
-          </ul>
+            <ContactRow icon={<Mail className="h-4 w-4" strokeWidth={1.5} />} href={`mailto:${site.contacts.email}`} label={site.contacts.email} />          </ul>
         </Reveal>
 
         <Reveal delay={0.08}>
@@ -117,7 +111,7 @@ export function Contact() {
                       value={lead.contact}
                       onChange={(e) => update("contact", e.target.value)}
                       className={inputClass(!!errors.contact)}
-                      placeholder="+7 900 000-00-00 или @username"
+                      placeholder="+375 29 000-00-00 или @username"
                     />
                   </Field>
                   <Field label={f.task} error={errors.task} htmlFor="lead-task">

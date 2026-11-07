@@ -32,7 +32,7 @@ export function validateLead(lead: Lead): LeadErrors {
   const isPhone = digits.length >= 10 && digits.length <= 15 && /^[+\d\s()-]+$/.test(c);
   const isTelegram = /^@?[a-zA-Z][a-zA-Z0-9_]{4,31}$/.test(c) || /t\.me\/[a-zA-Z0-9_]{5,}/.test(c);
   if (!c) errors.contact = "Оставьте телефон или Telegram";
-  else if (!isPhone && !isTelegram) errors.contact = "Например: +7 900 000-00-00 или @username";
+  else if (!isPhone && !isTelegram) errors.contact = "Например: +375 29 000-00-00 или @username";
   if (lead.task.trim().length < 10) errors.task = "Опишите задачу хотя бы в паре слов";
   return errors;
 }
